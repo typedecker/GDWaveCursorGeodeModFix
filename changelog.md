@@ -1,3 +1,7 @@
+# 1.3.3
+- Show the Wave Cursor over external in-level overlays such as Eclipse while still hiding it during active gameplay.
+- Keep the cursor visible in pause/completion screens and outside levels even when another mod requests the system cursor to hide.
+
 # 1.3.2
 - Hide the Wave Cursor while actively playing a level while keeping it visible in pause/completion screens and outside levels.
 

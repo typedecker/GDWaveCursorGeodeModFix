@@ -14,3 +14,8 @@ This project includes a GitHub Actions workflow that builds the Windows `.geode`
 8. The downloaded artifact contains the compiled `.geode` file. Install that `.geode` package with Geode; do not put the source ZIP or `.patch` file in the Geode mods folder.
 
 The workflow also runs automatically whenever you push a commit to the repository.
+
+
+## Updating an existing GitHub repository
+
+Replace the repository contents with the contents of this project, including `.github/workflows/multi-platform.yml`, then commit and push. A push to any branch triggers the Windows build automatically. You can also run it manually from **Actions** → **Build Wave Cursor (Windows)** → **Run workflow**.

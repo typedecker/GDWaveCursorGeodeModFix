@@ -53,12 +53,20 @@ void CursorManager::createCursor() {
 void CursorManager::update() {
     this->m_cursor->setPosition(getMousePos());
 
-    // Geometry Dash keeps the PlayLayer alive while the level is being played
-    // and while its pause/completion UI is displayed. Hide WaveCursor only
-    // during active gameplay; keep it visible in pause/completion and menus.
-    bool shouldShow = this->m_show;
+    // Outside an active level, WaveCursor should always be available.
+    //
+    // While a level is actively running, Geometry Dash normally requests that
+    // the cursor be hidden (m_show becomes false), so the custom cursor stays
+    // hidden too. Overlays such as Eclipse can request the cursor again while
+    // the level is still active; in that case m_show becomes true and the
+    // custom cursor is shown over the overlay. Pause/completion screens also
+    // keep it visible regardless of the last cursor request.
+    bool shouldShow = true;
     if (auto* playLayer = PlayLayer::get()) {
-        shouldShow = playLayer->m_isPaused || playLayer->m_hasCompletedLevel;
+        const bool pausedOrCompleted =
+            playLayer->m_isPaused || playLayer->m_hasCompletedLevel;
+
+        shouldShow = pausedOrCompleted || this->m_show;
     }
 
     this->m_cursor->setVisible(shouldShow);
