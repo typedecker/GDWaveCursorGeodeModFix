@@ -66,8 +66,11 @@ public:
 
     void disableAllTrails();
 
-    // Force this cursor and every drawable child to render above other Cocos nodes.
+    // Keep the cursor/trails at the top of the Cocos draw order.
     void bringToFront();
+    CCMotionStreak* getPlainTrail() { return this->m_plainTrail; }
+    GhostTrailEffect* getGhostTrail() { return this->m_ghostTrail; }
+    HardStreak* getHardTrail() { return this->m_hardTrail; }
 
 
 protected:

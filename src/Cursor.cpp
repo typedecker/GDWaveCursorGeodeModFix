@@ -12,24 +12,6 @@ using namespace geode::prelude;
 #include <chrono>
 #include <limits>
 
-namespace {
-    // Global Z ordering is necessary here because Eclipse can live in a
-    // different part of the scene graph. Local z-order only sorts siblings.
-    constexpr float kCursorGlobalZOrder = 1000000.0f;
-
-    void setGlobalZOrderRecursive(cocos2d::CCNode* node, float zOrder) {
-        if (!node) return;
-
-        node->setGlobalZOrder(zOrder);
-
-        if (auto children = node->getChildren()) {
-            for (unsigned int i = 0; i < children->count(); ++i) {
-                auto child = static_cast<cocos2d::CCNode*>(children->objectAtIndex(i));
-                setGlobalZOrderRecursive(child, zOrder);
-            }
-        }
-    }
-}
 
 
 // Stolen from createtogether lol
@@ -67,13 +49,13 @@ SimplePlayer* SimpleCursor::getSimplePlayer() {
 }
 
 void SimpleCursor::bringToFront() {
-    setGlobalZOrderRecursive(this, kCursorGlobalZOrder);
+    // local z-order works because CursorManager attaches the cursor directly
+    // to the running CCScene and reorders it after overlays such as Eclipse.
+    this->setZOrder(std::numeric_limits<int>::max());
 
-    // Trails live directly under OverlayManager rather than under this cursor,
-    // so they need the same global z-order treatment separately.
-    if (this->m_plainTrail) this->m_plainTrail->setGlobalZOrder(kCursorGlobalZOrder);
-    if (this->m_ghostTrail) this->m_ghostTrail->setGlobalZOrder(kCursorGlobalZOrder);
-    if (this->m_hardTrail) this->m_hardTrail->setGlobalZOrder(kCursorGlobalZOrder);
+    if (this->m_plainTrail) this->m_plainTrail->setZOrder(std::numeric_limits<int>::max());
+    if (this->m_ghostTrail) this->m_ghostTrail->setZOrder(std::numeric_limits<int>::max());
+    if (this->m_hardTrail) this->m_hardTrail->setZOrder(std::numeric_limits<int>::max());
 }
 
 bool SimpleCursor::init(const CursorData& cursorData) {
@@ -119,10 +101,13 @@ void SimpleCursor::createPlainTrail() {
             texture
         );
         this->m_plainTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });   
-        OverlayManager::get()->addChild(this->m_plainTrail);
+        if (auto parent = this->getParent()) {
+            parent->addChild(this->m_plainTrail, std::numeric_limits<int>::max());
+        } else {
+            OverlayManager::get()->addChild(this->m_plainTrail, std::numeric_limits<int>::max());
+        }
         this->m_plainTrail->setID("cursor-plain-trail"_spr); 
         this->m_plainTrail->setZOrder(std::numeric_limits<int>::max());
-        this->m_plainTrail->setGlobalZOrder(kCursorGlobalZOrder);
     }
 
     if (gm->getPlayerStreak() == 6) {
@@ -174,9 +159,12 @@ void SimpleCursor::createGhostTrail() {
       
         // this->m_ghostTrail->doBlendAdditive();
         this->m_ghostTrail->m_color = ccBLACK;
-        OverlayManager::get()->addChild(m_ghostTrail);
+        if (auto parent = this->getParent()) {
+            parent->addChild(this->m_ghostTrail, std::numeric_limits<int>::max());
+        } else {
+            OverlayManager::get()->addChild(this->m_ghostTrail, std::numeric_limits<int>::max());
+        }
         this->m_ghostTrail->setZOrder(std::numeric_limits<int>::max());
-        this->m_ghostTrail->setGlobalZOrder(kCursorGlobalZOrder);
         this->m_ghostTrail->setVisible(false);
 
         // CCLayer* ghostContainer = CCLayer::create();

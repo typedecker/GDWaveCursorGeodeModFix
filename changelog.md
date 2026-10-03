@@ -1,3 +1,8 @@
+## v1.3.6
+
+- Fix build compatibility by removing unsupported Cocos2d global-z-order calls.
+- Attach WaveCursor and its trails directly to the active scene at maximum local z-order so the cursor renders above Eclipse's Cocos UI.
+
 # v1.3.5
 
 - Fixed Eclipse/in-game overlay draw-order conflicts by assigning the Wave Cursor and its drawable children a high global z-order.

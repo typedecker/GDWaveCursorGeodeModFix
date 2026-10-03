@@ -7,7 +7,7 @@
 #include <limits>
 
 namespace {
-    constexpr float kCursorGlobalZOrder = 1000000.0f;
+    constexpr int kCursorTopZOrder = std::numeric_limits<int>::max();
 }
 
 
@@ -23,7 +23,16 @@ void CursorManager::createCursor() {
         );
         this->m_cursor = SimpleCursor::create(data);
         this->m_cursor->setID("cursor"_spr);
-        OverlayManager::get()->addChild(this->m_cursor);
+        // Put the cursor directly on the running scene instead of Geode's
+        // persistent OverlayManager. Eclipse's Cocos UI can live above the
+        // OverlayManager in the scene graph, so local z-order there cannot
+        // place the cursor above Eclipse. If no scene exists yet, keep the
+        // cursor in OverlayManager until the next update() reparents it.
+        if (auto scene = cocos2d::CCDirector::get()->getRunningScene()) {
+            scene->addChild(this->m_cursor, kCursorTopZOrder);
+        } else {
+            OverlayManager::get()->addChild(this->m_cursor, kCursorTopZOrder);
+        }
     } else {
         auto data = SimpleCursor::CursorData(
             gameManager->getPlayerColor(),
@@ -38,8 +47,7 @@ void CursorManager::createCursor() {
     this->m_cursor->setAnchorPoint(ccp(1.0f, 0.5f));
 
     this->m_cursor->setScale(this->m_cursorSize);
-    this->m_cursor->setZOrder(std::numeric_limits<int>::max());
-    this->m_cursor->setGlobalZOrder(kCursorGlobalZOrder);
+    this->m_cursor->setZOrder(kCursorTopZOrder);
     this->m_cursor->bringToFront();
 
     // auto trailType = Mod::get()->getSettingValue<std::string>("trail-type");
@@ -59,12 +67,46 @@ void CursorManager::createCursor() {
 }
 
 void CursorManager::update() {
+    auto scene = cocos2d::CCDirector::get()->getRunningScene();
+    if (scene) {
+        // Eclipse's Cocos UI can be a sibling of Geode's OverlayManager.
+        // Reparent the cursor/trails to the actual scene and reorder them on
+        // every frame so they are the last Cocos nodes drawn, including when
+        // an overlay is opened after WaveCursor.
+        if (this->m_cursor->getParent() != scene) {
+            this->m_cursor->removeFromParentAndCleanup(false);
+            scene->addChild(this->m_cursor, kCursorTopZOrder);
+        } else {
+            scene->reorderChild(this->m_cursor, kCursorTopZOrder);
+        }
+
+        if (auto trail = this->m_cursor->getPlainTrail()) {
+            if (trail->getParent() != scene) {
+                trail->removeFromParentAndCleanup(false);
+                scene->addChild(trail, kCursorTopZOrder);
+            } else {
+                scene->reorderChild(trail, kCursorTopZOrder);
+            }
+        }
+        if (auto trail = this->m_cursor->getGhostTrail()) {
+            if (trail->getParent() != scene) {
+                trail->removeFromParentAndCleanup(false);
+                scene->addChild(trail, kCursorTopZOrder);
+            } else {
+                scene->reorderChild(trail, kCursorTopZOrder);
+            }
+        }
+        if (auto trail = this->m_cursor->getHardTrail()) {
+            if (trail->getParent() != scene) {
+                trail->removeFromParentAndCleanup(false);
+                scene->addChild(trail, kCursorTopZOrder);
+            } else {
+                scene->reorderChild(trail, kCursorTopZOrder);
+            }
+        }
+    }
+
     this->m_cursor->setPosition(getMousePos());
-    // Eclipse can be a separate branch of the scene graph, so local z-order
-    // alone cannot put WaveCursor above it. Use global z-order and refresh the
-    // whole cursor subtree because SimplePlayer may replace child sprites.
-    this->m_cursor->setZOrder(std::numeric_limits<int>::max());
-    this->m_cursor->setGlobalZOrder(kCursorGlobalZOrder);
     this->m_cursor->bringToFront();
 
     // Outside an active level, WaveCursor should always be available.
