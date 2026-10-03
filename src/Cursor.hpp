@@ -66,6 +66,9 @@ public:
 
     void disableAllTrails();
 
+    // Force this cursor and every drawable child to render above other Cocos nodes.
+    void bringToFront();
+
 
 protected:
     bool init(const CursorData& cursorData);

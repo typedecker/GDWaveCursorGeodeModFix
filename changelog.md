@@ -1,3 +1,8 @@
+# v1.3.5
+
+- Fixed Eclipse/in-game overlay draw-order conflicts by assigning the Wave Cursor and its drawable children a high global z-order.
+- Preserved v1.3.4 visibility behavior for normal gameplay, pause/completion screens, and in-level overlays.
+
 # v1.3.4
 
 - Fixed the WaveCursor appearing behind Eclipse and other in-level overlays by keeping the cursor at the highest overlay z-order.

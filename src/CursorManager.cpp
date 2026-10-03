@@ -6,6 +6,10 @@
 #include <Geode/binding/PlayLayer.hpp>
 #include <limits>
 
+namespace {
+    constexpr float kCursorGlobalZOrder = 1000000.0f;
+}
+
 
 void CursorManager::createCursor() {
     auto gameManager = GameManager::get();
@@ -34,6 +38,9 @@ void CursorManager::createCursor() {
     this->m_cursor->setAnchorPoint(ccp(1.0f, 0.5f));
 
     this->m_cursor->setScale(this->m_cursorSize);
+    this->m_cursor->setZOrder(std::numeric_limits<int>::max());
+    this->m_cursor->setGlobalZOrder(kCursorGlobalZOrder);
+    this->m_cursor->bringToFront();
 
     // auto trailType = Mod::get()->getSettingValue<std::string>("trail-type");
     // log::info("Creating trailType {}", trailType);
@@ -53,9 +60,12 @@ void CursorManager::createCursor() {
 
 void CursorManager::update() {
     this->m_cursor->setPosition(getMousePos());
-    // Eclipse and other in-level overlays may be created after WaveCursor;
-    // keep the cursor at the highest local z-order so it remains visible on top.
+    // Eclipse can be a separate branch of the scene graph, so local z-order
+    // alone cannot put WaveCursor above it. Use global z-order and refresh the
+    // whole cursor subtree because SimplePlayer may replace child sprites.
     this->m_cursor->setZOrder(std::numeric_limits<int>::max());
+    this->m_cursor->setGlobalZOrder(kCursorGlobalZOrder);
+    this->m_cursor->bringToFront();
 
     // Outside an active level, WaveCursor should always be available.
     //

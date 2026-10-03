@@ -12,6 +12,25 @@ using namespace geode::prelude;
 #include <chrono>
 #include <limits>
 
+namespace {
+    // Global Z ordering is necessary here because Eclipse can live in a
+    // different part of the scene graph. Local z-order only sorts siblings.
+    constexpr float kCursorGlobalZOrder = 1000000.0f;
+
+    void setGlobalZOrderRecursive(cocos2d::CCNode* node, float zOrder) {
+        if (!node) return;
+
+        node->setGlobalZOrder(zOrder);
+
+        if (auto children = node->getChildren()) {
+            for (unsigned int i = 0; i < children->count(); ++i) {
+                auto child = static_cast<cocos2d::CCNode*>(children->objectAtIndex(i));
+                setGlobalZOrderRecursive(child, zOrder);
+            }
+        }
+    }
+}
+
 
 // Stolen from createtogether lol
 SimpleCursor* SimpleCursor::create(const CursorData& cursorData) {
@@ -40,10 +59,21 @@ void SimpleCursor::updateCursor(const CursorData& cursorData) {
     }
 
     this->aprilFoolsActivity();
+    this->bringToFront();
 }
 
 SimplePlayer* SimpleCursor::getSimplePlayer() {
     return this->m_cursorSprite;
+}
+
+void SimpleCursor::bringToFront() {
+    setGlobalZOrderRecursive(this, kCursorGlobalZOrder);
+
+    // Trails live directly under OverlayManager rather than under this cursor,
+    // so they need the same global z-order treatment separately.
+    if (this->m_plainTrail) this->m_plainTrail->setGlobalZOrder(kCursorGlobalZOrder);
+    if (this->m_ghostTrail) this->m_ghostTrail->setGlobalZOrder(kCursorGlobalZOrder);
+    if (this->m_hardTrail) this->m_hardTrail->setGlobalZOrder(kCursorGlobalZOrder);
 }
 
 bool SimpleCursor::init(const CursorData& cursorData) {
@@ -54,6 +84,7 @@ bool SimpleCursor::init(const CursorData& cursorData) {
     this->addChild(this->m_cursorSprite);
     // Keep the cursor above other OverlayManager children (including in-level menus).
     this->setZOrder(std::numeric_limits<int>::max());
+    this->bringToFront();
 
     this->setContentSize(this->m_cursorSprite->m_outlineSprite->getScaledContentSize());
     this->m_cursorSprite->setPosition(this->m_cursorSprite->m_outlineSprite->getScaledContentSize() / 2);
@@ -90,7 +121,8 @@ void SimpleCursor::createPlainTrail() {
         this->m_plainTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });   
         OverlayManager::get()->addChild(this->m_plainTrail);
         this->m_plainTrail->setID("cursor-plain-trail"_spr); 
-        this->m_plainTrail->setZOrder(9999);
+        this->m_plainTrail->setZOrder(std::numeric_limits<int>::max());
+        this->m_plainTrail->setGlobalZOrder(kCursorGlobalZOrder);
     }
 
     if (gm->getPlayerStreak() == 6) {
@@ -143,6 +175,8 @@ void SimpleCursor::createGhostTrail() {
         // this->m_ghostTrail->doBlendAdditive();
         this->m_ghostTrail->m_color = ccBLACK;
         OverlayManager::get()->addChild(m_ghostTrail);
+        this->m_ghostTrail->setZOrder(std::numeric_limits<int>::max());
+        this->m_ghostTrail->setGlobalZOrder(kCursorGlobalZOrder);
         this->m_ghostTrail->setVisible(false);
 
         // CCLayer* ghostContainer = CCLayer::create();
@@ -188,6 +222,7 @@ void SimpleCursor::aprilFoolsActivity() {
         if (!this->m_ohMySog) {
             this->m_ohMySog = CCSprite::create("sog.png"_spr);
             this->addChild(this->m_ohMySog);
+            this->bringToFront();
             this->m_ohMySog->setAnchorPoint({0.25, 0.55});
             this->m_ohMySog->setScale(0.5);
         }
