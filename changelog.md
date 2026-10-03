@@ -1,3 +1,8 @@
+# v1.3.4
+
+- Fixed the WaveCursor appearing behind Eclipse and other in-level overlays by keeping the cursor at the highest overlay z-order.
+- Preserved the v1.3.3 behavior: hidden during active gameplay, visible in pause/completion screens, and visible when an in-level menu requests the cursor.
+
 # 1.3.3
 - Show the Wave Cursor over external in-level overlays such as Eclipse while still hiding it during active gameplay.
 - Keep the cursor visible in pause/completion screens and outside levels even when another mod requests the system cursor to hide.

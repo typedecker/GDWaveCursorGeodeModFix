@@ -4,6 +4,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/PlatformToolbox.hpp>
 #include <Geode/binding/PlayLayer.hpp>
+#include <limits>
 
 
 void CursorManager::createCursor() {
@@ -52,6 +53,9 @@ void CursorManager::createCursor() {
 
 void CursorManager::update() {
     this->m_cursor->setPosition(getMousePos());
+    // Eclipse and other in-level overlays may be created after WaveCursor;
+    // keep the cursor at the highest local z-order so it remains visible on top.
+    this->m_cursor->setZOrder(std::numeric_limits<int>::max());
 
     // Outside an active level, WaveCursor should always be available.
     //
