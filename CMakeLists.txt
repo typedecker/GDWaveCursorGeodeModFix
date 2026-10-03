@@ -8,7 +8,7 @@ else()
 endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-project(WaveCursor VERSION 1.3.6)
+project(WaveCursor VERSION 1.3.7)
 
 file(GLOB_RECURSE CPPSOURCES CONFIGURE_DEPENDS 
     src/*.cpp

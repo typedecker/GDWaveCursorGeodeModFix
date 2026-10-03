@@ -10,7 +10,6 @@ namespace {
     constexpr int kCursorTopZOrder = std::numeric_limits<int>::max();
 }
 
-
 void CursorManager::createCursor() {
     auto gameManager = GameManager::get();
     if (!this->m_cursor) {
@@ -23,11 +22,10 @@ void CursorManager::createCursor() {
         );
         this->m_cursor = SimpleCursor::create(data);
         this->m_cursor->setID("cursor"_spr);
-        // Put the cursor directly on the running scene instead of Geode's
-        // persistent OverlayManager. Eclipse's Cocos UI can live above the
-        // OverlayManager in the scene graph, so local z-order there cannot
-        // place the cursor above Eclipse. If no scene exists yet, keep the
-        // cursor in OverlayManager until the next update() reparents it.
+
+        // Keep the cursor in the running scene so its position uses the same
+        // coordinate space as the game and its in-game trails. The final draw
+        // is handled by the CCDirector hook after the scene is rendered.
         if (auto scene = cocos2d::CCDirector::get()->getRunningScene()) {
             scene->addChild(this->m_cursor, kCursorTopZOrder);
         } else {
@@ -43,24 +41,14 @@ void CursorManager::createCursor() {
         );
         this->m_cursor->updateCursor(data);
     }
-    
-    this->m_cursor->setAnchorPoint(ccp(1.0f, 0.5f));
 
+    this->m_cursor->setAnchorPoint(ccp(1.0f, 0.5f));
     this->m_cursor->setScale(this->m_cursorSize);
     this->m_cursor->setZOrder(kCursorTopZOrder);
     this->m_cursor->bringToFront();
 
-    // auto trailType = Mod::get()->getSettingValue<std::string>("trail-type");
-    // log::info("Creating trailType {}", trailType);
-    if(this->m_enableTrail) {
-        // if (trailType == "Plain Trail") {
-            // this->m_cursor->m_trail = SimpleCursor::Plain;
-            this->m_cursor->createPlainTrail();
-        /* }  else if (trailType == "Ghost Trail") {
-            this->m_cursor->createGhostTrail();
-        } else {
-            log::error("Could not find trailType {}", trailType);
-        } */
+    if (this->m_enableTrail) {
+        this->m_cursor->createPlainTrail();
     } else {
         this->m_cursor->disableAllTrails();
     }
@@ -68,11 +56,9 @@ void CursorManager::createCursor() {
 
 void CursorManager::update() {
     auto scene = cocos2d::CCDirector::get()->getRunningScene();
-    if (scene) {
-        // Eclipse's Cocos UI can be a sibling of Geode's OverlayManager.
-        // Reparent the cursor/trails to the actual scene and reorder them on
-        // every frame so they are the last Cocos nodes drawn, including when
-        // an overlay is opened after WaveCursor.
+    if (scene && this->m_cursor) {
+        // Keep cursor/trails under the active scene. They are hidden during the
+        // normal scene traversal and manually visited after drawScene().
         if (this->m_cursor->getParent() != scene) {
             this->m_cursor->removeFromParentAndCleanup(false);
             scene->addChild(this->m_cursor, kCursorTopZOrder);
@@ -106,25 +92,22 @@ void CursorManager::update() {
         }
     }
 
+    if (!this->m_cursor) return;
+
     this->m_cursor->setPosition(getMousePos());
     this->m_cursor->bringToFront();
 
-    // Outside an active level, WaveCursor should always be available.
-    //
-    // While a level is actively running, Geometry Dash normally requests that
-    // the cursor be hidden (m_show becomes false), so the custom cursor stays
-    // hidden too. Overlays such as Eclipse can request the cursor again while
-    // the level is still active; in that case m_show becomes true and the
-    // custom cursor is shown over the overlay. Pause/completion screens also
-    // keep it visible regardless of the last cursor request.
+    // Outside an active level, WaveCursor remains visible. During active
+    // gameplay it follows the platform cursor visibility request; this lets
+    // overlays such as Eclipse explicitly show the cursor while open.
     bool shouldShow = true;
     if (auto* playLayer = PlayLayer::get()) {
         const bool pausedOrCompleted =
             playLayer->m_isPaused || playLayer->m_hasCompletedLevel;
-
         shouldShow = pausedOrCompleted || this->m_show;
     }
 
+    this->m_shouldShow = shouldShow;
     this->m_cursor->setVisible(shouldShow);
 
     if (this->m_enableTrail) {
@@ -132,8 +115,46 @@ void CursorManager::update() {
     }
 }
 
+void CursorManager::prepareForSceneDraw() {
+    if (!this->m_cursor) return;
+
+    // Prevent the cursor/trails from being drawn during the normal scene pass.
+    // renderAfterScene() draws them once at the very end instead.
+    this->m_cursor->setVisible(false);
+    this->m_cursor->setVisibleTrail(false);
+}
+
+void CursorManager::renderAfterScene() {
+    if (!this->m_cursor || !this->m_shouldShow) return;
+
+    // drawScene() has finished, so this visit happens after the other Cocos2d
+    // scene/UI nodes, independent of their parent z-order.
+    this->m_cursor->setVisible(true);
+    this->m_cursor->visit();
+
+    if (this->m_enableTrail) {
+        if (auto trail = this->m_cursor->getPlainTrail()) {
+            trail->setVisible(true);
+            trail->visit();
+        }
+        if (auto trail = this->m_cursor->getGhostTrail()) {
+            trail->setVisible(true);
+            trail->visit();
+        }
+        if (auto trail = this->m_cursor->getHardTrail()) {
+            trail->setVisible(true);
+            trail->visit();
+        }
+    }
+
+    // Leave the nodes hidden after the final pass. The next update() will set
+    // the desired state before the following frame is drawn.
+    this->m_cursor->setVisible(false);
+    this->m_cursor->setVisibleTrail(false);
+}
+
 void CursorManager::setCursorSize(int size) {
-    this->m_cursorSize = ((float)size)/100;
+    this->m_cursorSize = ((float)size) / 100;
 }
 
 void CursorManager::enableDisableTrail(bool state) {

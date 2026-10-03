@@ -15,6 +15,9 @@ public:
     void createCursor();
     void enableDisableTrail(bool state);
     void update();
+    void prepareForSceneDraw();
+    void renderAfterScene();
     void setCursorSize(int size);
     bool m_show = false;
+    bool m_shouldShow = false;
 };

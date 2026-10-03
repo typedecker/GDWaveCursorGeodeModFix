@@ -1,3 +1,8 @@
+# v1.3.7
+
+- Render WaveCursor after the complete Cocos2d scene so it appears above in-level Cocos overlays such as Eclipse.
+- Preserves the existing gameplay, pause, completion, and menu visibility behavior.
+
 ## v1.3.6
 
 - Fix build compatibility by removing unsupported Cocos2d global-z-order calls.
