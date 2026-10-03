@@ -1,0 +1,76 @@
+{
+	"geode": "5.9.0",
+	"gd": {
+		"win": "2.2081",
+		"mac": "2.2081"
+	},
+	"id": "chs000.wavecursor",
+	"name": "Wave Cursor",
+	"version": "v1.3.2",
+	"developer": "chs000",
+	"description": "Changes your in-game cursor to your wave icon",
+	"settings": {
+		"cursor": {
+			"type": "title",
+			"name": "Cursor"
+		},
+		"cursor-size": {
+            "type": "int",
+            "name": "Cursor size",
+			"description": "How large should the cursor appear?",
+            "default": 55,
+            "min": 40,
+            "max": 90,
+            "control": {
+                "slider": true
+            }
+        },
+		"trail": {
+			"type": "title",
+			"name": "Trail"
+		},
+		"enable-trail": {
+			"type": "bool",
+			"name": "Enable Trail",
+			"description": "Enable or disable showing a trail following the mouse cursor",
+			"default": true
+		},
+		"trail-width": {
+            "type": "float",
+            "name": "Trail Width",
+			"description": "How wide should the cursor's trail appear?",
+            "default": 10,
+            "min": 5,
+            "max": 20,
+            "control": {
+                "slider": true
+            }
+        },
+		"other": {
+			"type": "title",
+			"name": "Other"
+		},
+		"enable-override": {
+			"type": "string",
+			"name": "Enable Easter Egg",
+			"description": "wet.",
+			"one-of": [
+				"Sometimes",
+				"Always",
+				"NEVER (EVIL!)"
+			],
+			"default": "Sometimes"
+		}
+	},
+	"tags": [
+		"customization", "enhancement", "universal", "interface"
+	],
+	"links": {
+		"source": "https://github.com/Chs000-00/WaveCursor"
+	},
+    "resources": {
+        "sprites": [
+            "resources/sog.png"
+        ]
+    }
+}

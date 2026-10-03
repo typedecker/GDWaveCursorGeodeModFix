@@ -1,0 +1,77 @@
+#include "CursorManager.hpp"
+#include "Geode/ui/OverlayManager.hpp"
+#include "Cursor.hpp"
+#include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/PlatformToolbox.hpp>
+#include <Geode/binding/PlayLayer.hpp>
+
+
+void CursorManager::createCursor() {
+    auto gameManager = GameManager::get();
+    if (!this->m_cursor) {
+        auto data = SimpleCursor::CursorData(
+            gameManager->getPlayerColor(),
+            gameManager->getPlayerColor2(),
+            gameManager->getPlayerDart(),
+            gameManager->getPlayerGlow(),
+            gameManager->getPlayerGlowColor()
+        );
+        this->m_cursor = SimpleCursor::create(data);
+        this->m_cursor->setID("cursor"_spr);
+        OverlayManager::get()->addChild(this->m_cursor);
+    } else {
+        auto data = SimpleCursor::CursorData(
+            gameManager->getPlayerColor(),
+            gameManager->getPlayerColor2(),
+            gameManager->getPlayerDart(),
+            gameManager->getPlayerGlow(),
+            gameManager->getPlayerGlowColor()
+        );
+        this->m_cursor->updateCursor(data);
+    }
+    
+    this->m_cursor->setAnchorPoint(ccp(1.0f, 0.5f));
+
+    this->m_cursor->setScale(this->m_cursorSize);
+
+    // auto trailType = Mod::get()->getSettingValue<std::string>("trail-type");
+    // log::info("Creating trailType {}", trailType);
+    if(this->m_enableTrail) {
+        // if (trailType == "Plain Trail") {
+            // this->m_cursor->m_trail = SimpleCursor::Plain;
+            this->m_cursor->createPlainTrail();
+        /* }  else if (trailType == "Ghost Trail") {
+            this->m_cursor->createGhostTrail();
+        } else {
+            log::error("Could not find trailType {}", trailType);
+        } */
+    } else {
+        this->m_cursor->disableAllTrails();
+    }
+}
+
+void CursorManager::update() {
+    this->m_cursor->setPosition(getMousePos());
+
+    // Geometry Dash keeps the PlayLayer alive while the level is being played
+    // and while its pause/completion UI is displayed. Hide WaveCursor only
+    // during active gameplay; keep it visible in pause/completion and menus.
+    bool shouldShow = this->m_show;
+    if (auto* playLayer = PlayLayer::get()) {
+        shouldShow = playLayer->m_isPaused || playLayer->m_hasCompletedLevel;
+    }
+
+    this->m_cursor->setVisible(shouldShow);
+
+    if (this->m_enableTrail) {
+        this->m_cursor->setVisibleTrail(shouldShow);
+    }
+}
+
+void CursorManager::setCursorSize(int size) {
+    this->m_cursorSize = ((float)size)/100;
+}
+
+void CursorManager::enableDisableTrail(bool state) {
+    this->m_enableTrail = state;
+}
